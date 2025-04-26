@@ -118,10 +118,34 @@ EOL
 
 ########## FUNCTIONS ##########
 generate_trackers_list () {
-    trackers_list="" # Local variable for dynamic trackers
-    all_failed=true  # Assume that all URLs fail
+    trackers_list=""
 
-    # 1. Check if the list of URLs is empty
+	# 0. Read trackers list from file
+    if [[ -n "$TRACKER_LIST_FILE" && -f "$TRACKER_LIST_FILE" ]]; then
+        echo "[INFO] Using pre-fetched trackers list from $TRACKER_LIST_FILE"
+
+        if [[ ! -s "$TRACKER_LIST_FILE" ]]; then
+            echo "[WARN] $TRACKER_LIST_FILE exists but is empty. Falling back to static trackers."
+            trackers_list="$STATIC_TRACKERS_LIST"
+            return
+        fi
+
+        trackers_list=$(cat "$TRACKER_LIST_FILE")
+
+        if [[ "$DEBUG" == "true" ]]; then
+            echo "[DEBUG] Sample trackers loaded:"
+            echo "$trackers_list" | head -n 5
+            echo "[DEBUG] Total trackers loaded: $(echo "$trackers_list" | wc -l)"
+        fi
+
+        return
+    fi
+
+    # No file? Download dynamically
+    echo "[WARN] No pre-fetched tracker list found. Downloading manually..."
+    all_failed=true
+
+	# 1. Check if the list of URLs is empty
     if [[ ${#live_trackers_list_urls[@]} -eq 0 ]]; then
         echo "No live tracker URLs provided. Using the static list."
         trackers_list="$STATIC_TRACKERS_LIST"
